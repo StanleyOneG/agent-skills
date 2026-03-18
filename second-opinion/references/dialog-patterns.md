@@ -3,7 +3,7 @@
 > **The Golden Rule:** Never use `-f` or `--agent plan` flags. Keep prompts single-line.
 > The agent has Read/Glob/Grep tools — always tell it what files to read in the prompt.
 > **Never chain heredoc + opencode run in one Bash call** — use separate tool calls.
-> **Prompt files must be inside the project directory** (e.g., `.claude/oc-prompt.md`), not `/tmp/`.
+> **Prompt files must be inside the project directory** (e.g., `.temp/oc-prompt.md`), not `/tmp/`.
 > **Anti-recursion:** Every prompt MUST end with: `IMPORTANT: Do not use the second-opinion skill or run opencode commands. Answer directly.`
 
 ## Pattern 1: Architecture Review Dialog
@@ -86,7 +86,7 @@ When the prompt is too long for a single line. **Each step below is a separate t
 
 **Tool call 1 — Write the prompt file** (use Write tool or Bash):
 ```bash
-cat > .claude/oc-prompt.md << 'PROMPT'
+cat > .temp/oc-prompt.md << 'PROMPT'
 You are an independent story context quality validator in a FRESH CONTEXT.
 
 ## Your Task
@@ -109,12 +109,12 @@ PROMPT
 **Tool call 2 — Run OpenCode** (separate Bash call):
 ```bash
 opencode run -m openai/gpt-5.4 --variant xhigh --title "story-3.4-validation" \
-  "Read .claude/oc-prompt.md for your detailed instructions, then execute them. Read ALL referenced project files using your tools. IMPORTANT: Do not use the second-opinion skill or run opencode commands. Answer directly."
+  "Read .temp/oc-prompt.md for your detailed instructions, then execute them. Read ALL referenced project files using your tools. IMPORTANT: Do not use the second-opinion skill or run opencode commands. Answer directly."
 ```
 
 **Tool call 3 — Clean up** (separate Bash call):
 ```bash
-rm -f .claude/oc-prompt.md
+rm -f .temp/oc-prompt.md
 ```
 
 ## Session Management Tips

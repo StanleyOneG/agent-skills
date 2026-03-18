@@ -20,8 +20,8 @@ allowed-tools:
   - "Glob"
   - "Grep"
 metadata:
-  author: pomogai
-  version: "2.0.0"
+  author: Stanley_one
+  version: "3.0.0"
   domain: ai-collaboration
   triggers: second opinion, ask opencode, consult gpt, cross-model, validate approach, another perspective, discuss with gpt, opencode dialog, architecture decision, design trade-off, uncertain approach, security review, complex debugging, schema design, API contract
   role: collaborator
@@ -101,11 +101,11 @@ opencode run -c -m openai/gpt-5.4 --variant high "Can you elaborate on point 3? 
 
 When the prompt is too long for a single line, you MUST use two separate tool calls. **Never** chain file creation and `opencode run` in the same Bash command — the heredoc interferes with OpenCode's stdin/stdout handling, causing it to hang silently.
 
-Also, place prompt files **inside the project directory** (e.g., `.claude/oc-prompt.md`), not in `/tmp/`. OpenCode cannot read files outside its project directory by default.
+Also, place prompt files **inside the project directory** (e.g., `.temp/oc-prompt.md`), not in `/tmp/`. OpenCode cannot read files outside its project directory by default.
 
 **Tool call 1 — Write the prompt file** (use Write tool or a separate Bash call):
 ```bash
-cat > .claude/oc-prompt.md << 'PROMPT'
+cat > .temp/oc-prompt.md << 'PROMPT'
 Your detailed multi-line instructions here...
 
 ## Files to Read
@@ -116,12 +116,12 @@ PROMPT
 
 **Tool call 2 — Run OpenCode** (separate Bash call):
 ```bash
-opencode run -m openai/gpt-5.4 --variant high --title "topic-name" "Read .claude/oc-prompt.md for instructions, then execute them. IMPORTANT: Do not use the second-opinion skill or run opencode commands. Answer directly."
+opencode run -m openai/gpt-5.4 --variant high --title "topic-name" "Read .temp/oc-prompt.md for instructions, then execute them. IMPORTANT: Do not use the second-opinion skill or run opencode commands. Answer directly."
 ```
 
 **Tool call 3 — Clean up** (separate Bash call, or skip if you want to keep it):
 ```bash
-rm -f .claude/oc-prompt.md
+rm -f .temp/oc-prompt.md
 ```
 
 ### What NOT to Do
@@ -138,10 +138,10 @@ opencode run -m openai/gpt-5.4 "Review this code.
 Focus on error handling."
 
 # BROKEN — heredoc + opencode in same command hangs due to stdin conflict
-cat > .claude/oc-prompt.md << 'PROMPT'
+cat > .temp/oc-prompt.md << 'PROMPT'
 instructions...
 PROMPT
-opencode run -m openai/gpt-5.4 "Read .claude/oc-prompt.md"
+opencode run -m openai/gpt-5.4 "Read .temp/oc-prompt.md"
 
 # BROKEN — /tmp/ is outside project directory, OpenCode auto-rejects
 opencode run -m openai/gpt-5.4 "Read /tmp/oc-prompt.md for instructions"
@@ -163,9 +163,9 @@ opencode run -m openai/gpt-5.4 --variant high --title "schema-review" "Review th
 ```
 
 **With a complex prompt** — use two separate tool calls (see Complex Prompt Pattern above):
-1. Write prompt to `.claude/oc-prompt.md`
-2. `opencode run -m openai/gpt-5.4 --variant high --title "my-review" "Read .claude/oc-prompt.md for your detailed instructions, then execute them. IMPORTANT: Do not use the second-opinion skill or run opencode commands. Answer directly."`
-3. `rm -f .claude/oc-prompt.md`
+1. Write prompt to `.temp/oc-prompt.md`
+2. `opencode run -m openai/gpt-5.4 --variant high --title "my-review" "Read .temp/oc-prompt.md for your detailed instructions, then execute them. IMPORTANT: Do not use the second-opinion skill or run opencode commands. Answer directly."`
+3. `rm -f .temp/oc-prompt.md`
 
 ### Mode 2: Multi-Turn Dialog
 
@@ -217,7 +217,7 @@ Before calling OpenCode, prepare a clear, self-contained prompt. The other model
 - **File paths** the agent should read (it has its own Read/Glob/Grep tools)
 - **Constraints** the other model should know about
 
-If the prompt is too long for a single line, write it to `.claude/oc-prompt.md` in a separate tool call, then run OpenCode in another tool call (see Complex Prompt Pattern above).
+If the prompt is too long for a single line, write it to `.temp/oc-prompt.md` in a separate tool call, then run OpenCode in another tool call (see Complex Prompt Pattern above).
 
 ### 2. Execute the Consultation
 
@@ -267,7 +267,7 @@ When presenting results to the user, use this structure:
 - **Prompts must be single-line** — Multi-line strings break the CLI parser
 - **Let the agent read files itself** — It has Read, Glob, and Grep tools; just tell it file paths in the prompt
 - **Separate file creation from opencode run** — Never chain heredoc + `opencode run` in one Bash call; use two separate tool calls
-- **Prompt files inside project dir** — Use `.claude/oc-prompt.md`, not `/tmp/`. OpenCode cannot read outside its project directory
+- **Prompt files inside project dir** — Use `.temp/oc-prompt.md`, not `/tmp/`. OpenCode cannot read outside its project directory
 - **Keep context self-contained** — The other model starts fresh unless you use `--continue`
 - **Title your sessions** — Makes it easy to resume dialogs later with `opencode session list`
 - **Check model availability** — Run `opencode models` to see what's configured
@@ -292,7 +292,7 @@ opencode models
 | `File not found: <your prompt text>` | You used `-f` flag — remove it. The `-f` flag causes the positional prompt to be parsed as a file path. Tell the agent to read files itself instead. |
 | Silent exit code 1 (no error) | Remove `--agent plan` flag if present. Also remove any `-f` flags. Both cause silent failures. |
 | OpenCode hangs with no output | You chained heredoc + `opencode run` in one Bash call. Split into two separate tool calls: one to write the file, one to run OpenCode. |
-| Agent can't read the prompt file | File is outside the project directory (e.g., `/tmp/`). Move it inside the project (e.g., `.claude/oc-prompt.md`). |
+| Agent can't read the prompt file | File is outside the project directory (e.g., `/tmp/`). Move it inside the project (e.g., `.temp/oc-prompt.md`). |
 | `opencode: command not found` | Install OpenCode or check PATH |
 | Authentication error | Run `opencode auth login` |
 | Model not available | Run `opencode models` to check; try `opencode models --refresh` |
